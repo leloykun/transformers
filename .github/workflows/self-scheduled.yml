@@ -488,6 +488,7 @@ jobs:
           ACCESS_REPO_INFO_TOKEN: ${{ secrets.ACCESS_REPO_INFO_TOKEN }}
           CI_EVENT: scheduled
           CI_SHA: ${{ github.sha }}
+          CI_WORKFLOW_REF: ${{ github.workflow_ref }}
           RUNNER_STATUS: ${{ needs.check_runner_status.result }}
           RUNNER_ENV_STATUS: ${{ needs.check_runners.result }}
           SETUP_STATUS: ${{ needs.setup.result }}

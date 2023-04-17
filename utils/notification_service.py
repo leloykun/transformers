@@ -413,40 +413,42 @@ class Message:
         with open(file_path, "w", encoding="UTF-8") as fp:
             fp.write(module_failures_report)
 
-        # Get the last previously completed CI's failure tables
-        artifact_names = ["test_failure_tables"]
-        output_dir = os.path.join(os.getcwd(), "previous_reports")
-        os.makedirs(output_dir, exist_ok=True)
-        prev_tables = get_last_daily_ci_reports(
-            artifact_names=artifact_names, output_dir=output_dir, token=os.environ["ACCESS_REPO_INFO_TOKEN"]
-        )
+        target_workflow = "huggingface/transformers/.github/workflows/self-scheduled.yml@refs/heads/main"
+        if os.environ.get("CI_WORKFLOW_REF") == target_workflow:
+            # Get the last previously completed CI's failure tables
+            artifact_names = ["test_failure_tables"]
+            output_dir = os.path.join(os.getcwd(), "previous_reports")
+            os.makedirs(output_dir, exist_ok=True)
+            prev_tables = get_last_daily_ci_reports(
+                artifact_names=artifact_names, output_dir=output_dir, token=os.environ["ACCESS_REPO_INFO_TOKEN"]
+            )
 
-        # The last run doesn't produce `test_failure_tables` (by some issues or have no model failure at all)
-        if len(prev_tables) > 0:
-            # Compute the difference of the previous/current (model failure) table
-            prev_model_failures = prev_tables["test_failure_tables"]["model_failures_report.txt"]
-            entries_changed = self.compute_diff_for_failure_reports(model_failures_report, prev_model_failures)
-            if len(entries_changed) > 0:
-                # Save the complete difference
-                diff_report = prepare_reports(
-                    title="Changed model modules failures",
-                    header=model_header,
-                    reports=entries_changed,
-                    to_truncate=False,
-                )
-                file_path = os.path.join(os.getcwd(), "test_failure_tables/changed_model_failures_report.txt")
-                with open(file_path, "w", encoding="UTF-8") as fp:
-                    fp.write(diff_report)
+            # The last run doesn't produce `test_failure_tables` (by some issues or have no model failure at all)
+            if len(prev_tables) > 0:
+                # Compute the difference of the previous/current (model failure) table
+                prev_model_failures = prev_tables["test_failure_tables"]["model_failures_report.txt"]
+                entries_changed = self.compute_diff_for_failure_reports(model_failures_report, prev_model_failures)
+                if len(entries_changed) > 0:
+                    # Save the complete difference
+                    diff_report = prepare_reports(
+                        title="Changed model modules failures",
+                        header=model_header,
+                        reports=entries_changed,
+                        to_truncate=False,
+                    )
+                    file_path = os.path.join(os.getcwd(), "test_failure_tables/changed_model_failures_report.txt")
+                    with open(file_path, "w", encoding="UTF-8") as fp:
+                        fp.write(diff_report)
 
-                # To be sent to Slack channels
-                diff_report = prepare_reports(
-                    title="*Changed model modules failures*",
-                    header=model_header,
-                    reports=entries_changed,
-                )
-                model_failure_sections.append(
-                    {"type": "section", "text": {"type": "mrkdwn", "text": diff_report}},
-                )
+                    # To be sent to Slack channels
+                    diff_report = prepare_reports(
+                        title="*Changed model modules failures*",
+                        header=model_header,
+                        reports=entries_changed,
+                    )
+                    model_failure_sections.append(
+                        {"type": "section", "text": {"type": "mrkdwn", "text": diff_report}},
+                    )
 
         return model_failure_sections
 
