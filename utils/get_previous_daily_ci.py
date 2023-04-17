@@ -5,8 +5,11 @@ import requests
 from get_ci_error_statistics import download_artifact, get_artifacts_links
 
 
-def get_previous_daily_ci_runs(token, num_runs=7):
-    """Extract job names and their job links in a GitHub Actions workflow run"""
+def get_daily_ci_runs(token, num_runs=7):
+    """Get the workflow runs of the scheduled (daily) CI.
+
+    This only selects the runs triggered by the `schedule` event on the `main` branch.
+    """
     headers = None
     if token is not None:
         headers = {"Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}"}
@@ -24,7 +27,8 @@ def get_previous_daily_ci_runs(token, num_runs=7):
 
 
 def get_last_daily_ci_runs(token):
-    workflow_runs = get_previous_daily_ci_runs(token)
+    """Get the last completed workflow run id of the scheduled (daily) CI."""
+    workflow_runs = get_daily_ci_runs(token)
     workflow_run_id = None
     for workflow_run in workflow_runs:
         if workflow_run["status"] == "completed":
@@ -35,6 +39,7 @@ def get_last_daily_ci_runs(token):
 
 
 def get_last_daily_ci_artifacts(artifact_names, output_dir, token):
+    """Get the artifacts of last completed workflow run id of the scheduled (daily) CI."""
     workflow_run_id = get_last_daily_ci_runs(token)
     if workflow_run_id is not None:
         artifacts_links = get_artifacts_links(worflow_run_id=workflow_run_id, token=token)
@@ -47,6 +52,7 @@ def get_last_daily_ci_artifacts(artifact_names, output_dir, token):
 
 
 def get_last_daily_ci_reports(artifact_names, output_dir, token):
+    """Get the artifacts' content of the last completed workflow run id of the scheduled (daily) CI."""
     get_last_daily_ci_artifacts(artifact_names, output_dir, token)
 
     results = {}
