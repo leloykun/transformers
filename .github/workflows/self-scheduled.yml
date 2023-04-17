@@ -506,12 +506,3 @@ jobs:
         with:
           name: test_failure_tables
           path: test_failure_tables
-
-      # To be removed
-      # Complete failure tables of the previous completed run
-      - name: Failure table artifacts (of the previous completed run)
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: previous_reports
-          path: previous_reports
