@@ -2002,10 +2002,19 @@ class ChameleonForConditionalGeneration(ChameleonPreTrainedModel):
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
+        if pixel_values is not None:
+            batch_size, sequence_length = input_ids.shape
+            input_ids = input_ids.view(batch_size * sequence_length)
+            image_tokens = self.model.get_image_tokens(pixel_values)
+            special_image_mask = input_ids == self.vocabulary_mapping.image_token_id
+            image_tokens = image_tokens.to(input_ids.device, input_ids.dtype)
+            input_ids = input_ids.masked_scatter(special_image_mask, image_tokens)
+            input_ids = input_ids.view(batch_size, sequence_length)
+
         # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
         outputs = self.model(
             input_ids=input_ids,
-            pixel_values=pixel_values,
+            pixel_values=None,
             attention_mask=attention_mask,
             position_ids=position_ids,
             past_key_values=past_key_values,
@@ -2023,6 +2032,8 @@ class ChameleonForConditionalGeneration(ChameleonPreTrainedModel):
 
         loss = None
         if labels is not None:
+            mask = labels != -100
+            labels = torch.where(mask, input_ids, labels)
             # Shift so that tokens < n predict n
             shift_logits = logits[..., :-1, :].contiguous()
             shift_labels = labels[..., 1:].contiguous()
